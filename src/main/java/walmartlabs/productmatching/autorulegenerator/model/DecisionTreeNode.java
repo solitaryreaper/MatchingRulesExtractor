@@ -34,6 +34,8 @@ public class DecisionTreeNode {
 	private Feature parentFeatureName = null;
 	// Value of the link connecting the child and parent node
 	private double parentFeatureLinkValue = 0.0;
+	// Type of link connecting child and parent node
+	private DecisionTreeLinkType parentLinkType = null;
 	
 	// Default label for a leaf node
 	private DecisionTreeClassLabel label = DecisionTreeClassLabel.MISMATCH;
@@ -104,6 +106,14 @@ public class DecisionTreeNode {
 
 	public void setParentFeatureLinkValue(double parentFeatureLinkValue) {
 		this.parentFeatureLinkValue = parentFeatureLinkValue;
+	}
+
+	public DecisionTreeLinkType getParentLinkType() {
+		return parentLinkType;
+	}
+
+	public void setParentLinkType(DecisionTreeLinkType parentLinkType) {
+		this.parentLinkType = parentLinkType;
 	}
 
 	public DecisionTreeClassLabel getLabel() {

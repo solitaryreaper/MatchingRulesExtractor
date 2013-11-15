@@ -15,6 +15,22 @@ public class Dataset {
 	private List<Feature> features = Lists.newArrayList();
 	private List<ExamplePair> examplePairs = Lists.newArrayList();
 	
+	public Dataset(String name, List<Feature> features, List<ExamplePair> examplePairs)
+	{
+		this.name = name;
+		this.features = features;
+		this.examplePairs = examplePairs;
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
+		builder.append("Dataset [name=").append(name).append(", features=")
+				.append(features).append(", examplePairs=")
+				.append(examplePairs).append("]");
+		return builder.toString();
+	}
+
 	public String getName() {
 		return name;
 	}

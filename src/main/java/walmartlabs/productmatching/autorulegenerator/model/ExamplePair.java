@@ -1,6 +1,11 @@
 package walmartlabs.productmatching.autorulegenerator.model;
 
 import java.util.Map;
+import java.util.Set;
+
+import com.google.common.collect.Maps;
+
+import walmartlabs.productmatching.autorulegenerator.utils.match.MatchUtils;
 
 /**
  * Represents a pair of examples in the dataset and their match status.
@@ -9,41 +14,38 @@ import java.util.Map;
  *
  */
 public class ExamplePair {
-	// All the attribute name and value pairs for the first item in itempair
-	private Map<Feature, String> item1FeatureValMap = null;
-	// All the attribute name and value pairs for the second item in itempair
-	private Map<Feature, String> item2FeatureValMap = null;
+	private Example sourceItem;
+	private Example targetItem;
 	
 	// The classification label for this itempair.
 	private DecisionTreeClassLabel classLabel = DecisionTreeClassLabel.MISMATCH;
 
 	private Map<Feature, Double> attributeMatchScoreMap = null;
 	
-	public ExamplePair(Map<Feature, String> item1FeatureValMap, Map<Feature, String> item2FeatureValMap, 
-			DecisionTreeClassLabel classLabel)
+	public ExamplePair(Example sourceItem, Example targetItem, DecisionTreeClassLabel classLabel)
 	{
-		this.item1FeatureValMap = item1FeatureValMap;
-		this.item2FeatureValMap = item2FeatureValMap;
+		this.sourceItem = sourceItem;
+		this.targetItem = targetItem;
 		this.classLabel = classLabel;
 		
 		// calculate the score for each attribute and persist in a map
-		// TODO
+		attributeMatchScoreMap = calculateAttributeMatchScoreMap(sourceItem, targetItem);
 	}
 	
-	public Map<Feature, String> getItem1FeatureValMap() {
-		return item1FeatureValMap;
+	public Example getSourceItem() {
+		return sourceItem;
 	}
 
-	public void setItem1FeatureValMap(Map<Feature, String> item1FeatureValMap) {
-		this.item1FeatureValMap = item1FeatureValMap;
+	public void setSourceItem(Example sourceItem) {
+		this.sourceItem = sourceItem;
 	}
 
-	public Map<Feature, String> getItem2FeatureValMap() {
-		return item2FeatureValMap;
+	public Example getTargetItem() {
+		return targetItem;
 	}
 
-	public void setItem2FeatureValMap(Map<Feature, String> item2FeatureValMap) {
-		this.item2FeatureValMap = item2FeatureValMap;
+	public void setTargetItem(Example targetItem) {
+		this.targetItem = targetItem;
 	}
 
 	public DecisionTreeClassLabel getClassLabel() {
@@ -58,8 +60,29 @@ public class ExamplePair {
 		return attributeMatchScoreMap;
 	}
 
-	public void setAttributeMatchScoreMap(Map<Feature, Double> attributeMatchScoreMap) {
-		this.attributeMatchScoreMap = attributeMatchScoreMap;
+	/**
+	 * Calculate the similiarity score for each attribute in the example pair by comparing the
+	 * value in source and target item for the current attribute.
+	 * 
+	 * @param sourceItem
+	 * @param targetItem
+	 * @return
+	 */
+	private static Map<Feature, Double> calculateAttributeMatchScoreMap(Example sourceItem, Example targetItem) 
+	{
+		Map<Feature, String> sourceItemAttrValMap = sourceItem.getFeatureValueMap();
+		Map<Feature, String> targetItemAttrValMap = targetItem.getFeatureValueMap();
+		
+		Map<Feature, Double> attrSimScoreMap = Maps.newHashMap();
+		Set<Feature> features = sourceItemAttrValMap.keySet();
+		for(Feature f : features) {
+			String sourceAttrVal = sourceItemAttrValMap.get(f);
+			String targetAttrVal = targetItemAttrValMap.get(f);
+			double simScore = MatchUtils.getSimilarityScore(sourceAttrVal, targetAttrVal, f);
+			attrSimScoreMap.put(f, simScore);
+		}
+		
+		return attrSimScoreMap;
 	}
 	
 	/**
@@ -70,11 +93,31 @@ public class ExamplePair {
 	 */
 	public double getAttributeMatchScore(Feature feature)
 	{
-		double matchScore = -1.0;
+		double matchScore = 0.0;
 		if(attributeMatchScoreMap.containsKey(feature)) {
 			matchScore = attributeMatchScoreMap.get(feature);
 		}
 		
 		return matchScore;
+	}
+	
+	public String toString()
+	{
+		StringBuilder builder = new StringBuilder();
+		builder.append("ID").append("|#").append(sourceItem.getId()).append("|#").append(targetItem.getId()).append("|#").append("\n");
+		Map<Feature, String> sourceItemAttrMap = sourceItem.getFeatureValueMap();
+		Map<Feature, String> targetItemAttrMap = targetItem.getFeatureValueMap();
+		
+		Set<Feature> features = sourceItemAttrMap.keySet();
+		//features.addAll(targetItemAttrMap.keySet());
+		for(Feature feature : features) {
+			String attrName = feature.getName();
+			String sourceVal = sourceItem.getValueForAttribute(attrName);
+			String targetVal = targetItem.getValueForAttribute(attrName);
+			builder.append(attrName).append("|#").append(sourceVal).append("|#").append(targetVal).append("|#").append("\n");
+		}
+		builder.append("\n");
+		
+		return builder.toString();
 	}
 }

@@ -1,11 +1,16 @@
 package walmartlabs.productmatching.autorulegenerator.driver;
 
 import java.io.File;
+import java.util.List;
 
 import walmartlabs.productmatching.autorulegenerator.model.Dataset;
 import walmartlabs.productmatching.autorulegenerator.model.DecisionTreeNode;
-import walmartlabs.productmatching.autorulegenerator.utils.DatasetUtils;
 import walmartlabs.productmatching.autorulegenerator.utils.DecisionTreeUtils;
+import walmartlabs.productmatching.autorulegenerator.utils.input.ArffDatasetReader;
+import walmartlabs.productmatching.autorulegenerator.utils.input.DatasetReader;
+import walmartlabs.productmatching.autorulegenerator.utils.input.ItemPairDatasetReader;
+
+import com.google.common.collect.Lists;
 
 /**
  * Driver class that encapsulates the entire workflow for auto-generation of rules from a dataset.
@@ -23,16 +28,21 @@ public class RuleExtractionDriver {
 
 	public static void main(String[] args) {
 		// Step1 : Load the training dataset
-		String trainingDataFileName = args[1];
-		File trainDataFile = new File(trainingDataFileName);
-		Dataset trainDataset = DatasetUtils.parseDataset(trainDataFile);
+		System.out.println("Loading the training data set .." );
+		String matchPairsFileName = args[0].trim();
+		String mismatchPairsFileName = args[1].trim();
+		File matchPairsFile = new File(matchPairsFileName);
+		File mismatchPairsFile = new File(mismatchPairsFileName);
+		Dataset trainDataset = ItemPairDatasetReader.parseDataset(matchPairsFile, mismatchPairsFile, "Restaurant Dataset");
 		
 		// Step2: Build the decision tree from the training dataset
+		System.out.println("Generating the decision tree ..");
 		DecisionTreeNode ruleDTree = 
-				DecisionTreeUtils.learnRuleDecisionTree(trainDataset.getExamplePairs(), trainDataset.getFeatures(), 0);
+			DecisionTreeUtils.learnRuleDecisionTree(trainDataset.getExamplePairs(), trainDataset.getFeatures(), 0);
 		
 		// Step3: Print the decision tree.
-		DecisionTreeUtils.printRuleDecisionTree(ruleDTree);
+		System.out.println("Printing the decision tree ..");
+		DecisionTreeUtils.printRuleDecisionTree(ruleDTree, "");
 		
 		// Step4 : Extract the rules from the decision tree.
 		// TODO

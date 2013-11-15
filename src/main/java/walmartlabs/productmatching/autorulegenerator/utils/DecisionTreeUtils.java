@@ -1,6 +1,5 @@
 package walmartlabs.productmatching.autorulegenerator.utils;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -8,6 +7,7 @@ import org.apache.commons.collections.MapUtils;
 import org.springframework.util.CollectionUtils;
 
 import walmartlabs.productmatching.autorulegenerator.model.DecisionTreeClassLabel;
+import walmartlabs.productmatching.autorulegenerator.model.DecisionTreeLinkType;
 import walmartlabs.productmatching.autorulegenerator.model.DecisionTreeNode;
 import walmartlabs.productmatching.autorulegenerator.model.DecisionTreeNodeType;
 import walmartlabs.productmatching.autorulegenerator.model.ExamplePair;
@@ -16,7 +16,6 @@ import walmartlabs.productmatching.autorulegenerator.model.Feature;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.walmart.productgenome.pairComparison.model.rule.ItemMatchRule;
-import com.walmart.productgenome.pairComparison.model.rule.MatchEntityPair;
 
 /**
  * Utility class for decision tree processing.
@@ -26,8 +25,8 @@ import com.walmart.productgenome.pairComparison.model.rule.MatchEntityPair;
  */
 public class DecisionTreeUtils {
 
-	private static String LESS_THAN_VALUE = "<=";
-	private static String GREATER_THAN_VALUE = ">";
+	private static String LESS_THAN_VALUE = "<";
+	private static String GREATER_THAN_VALUE = ">=";
 	private static String MISSING_VALUE = "?";
 	
 	/**
@@ -42,8 +41,10 @@ public class DecisionTreeUtils {
 			List<Feature> features, int leafThreshold)
 	{
 		DecisionTreeClassLabel defaultClassLabel = DecisionTreeClassLabel.MISMATCH;
+		
 		// Returns a leaf node with default class label if examples is empty 
 		if(CollectionUtils.isEmpty(examplePairs)) {
+			System.out.println("Creating leaf node with DEFAULT label because no example pairs left.");
 			return createLeafNode(examplePairs, features, defaultClassLabel);
 		}
 		
@@ -52,21 +53,25 @@ public class DecisionTreeUtils {
 		
 		// Returns a leaf node with majority class label if features is empty
 		if(CollectionUtils.isEmpty(features)) {
+			System.out.println("Creating leaf node with MAJORITY label because no features left.");
 			return createLeafNode(examplePairs, features, majorityClassLabel);
 		}
 		
 		// Return if there is a pure classification
 		if(classLabelsMap.size() == 1) {
 			DecisionTreeClassLabel pureClassLabel = Lists.newArrayList(classLabelsMap.keySet()).get(0);
+			System.out.println("Creating leaf node because PURE classification " + pureClassLabel.toString());
 			return createLeafNode(examplePairs, features, pureClassLabel);
 		}
 		
 		// Check if number of instances left is less than the leaf threshold
 		if(examplePairs.size() < leafThreshold) {
 			if(majorityClassLabel != null) {
+				System.out.println("Creating leaf node because LESS THAN THRESHOLD with MAJORITY label");
 				return createLeafNode(examplePairs, features, majorityClassLabel);
 			}
 			else {
+				System.out.println("Creating leaf node because LESS THAN THRESHOLD with DEFAULT label");				
 				return createLeafNode(examplePairs, features, defaultClassLabel);
 			}
 		}
@@ -74,9 +79,11 @@ public class DecisionTreeUtils {
 		// Choose the best feature
 		Feature bestFeature = getBestFeature(examplePairs, features);
 		if(bestFeature == null) {
+			System.out.println("Creating leaf node because no BEST feature could be found.");
 			return createLeafNode(examplePairs, features, majorityClassLabel);
 		}
 		
+		System.out.println("Best feature chosen " + bestFeature.getName());
 		DecisionTreeNode root = createFeatureNode(examplePairs, features, bestFeature);
 		
 		// All the various branches emanating downwards from this decision node
@@ -90,30 +97,20 @@ public class DecisionTreeUtils {
 		List<DecisionTreeNode> featureValueNodes = Lists.newArrayList();
 		
 		double bestFeatureSplitValue = getBestSplitThreshold(examplePairs, bestFeature);
+		System.out.println("Best split value of " + bestFeatureSplitValue + " for feature " + bestFeature.getName());
 		
-		// Child node to represent the MISMATCH branch for current best feature
-		List<ExamplePair> lessThanValueExPairs = 
-				getExamplePairsWithFeatureValue(examplePairs, bestFeature, bestFeatureSplitValue, LESS_THAN_VALUE);
-		DecisionTreeNode lessThanValueNode = learnRuleDecisionTree(lessThanValueExPairs, features, leafThreshold);
-		lessThanValueNode.setParentFeatureName(bestFeature);
-		lessThanValueNode.setParentFeatureLinkValue(bestFeatureSplitValue);
-		featureValueNodes.add(lessThanValueNode);
-		
-		// Child node to represent the MATCH branch for current best feature
-		List<ExamplePair> greaterThanValueExPairs = 
-				getExamplePairsWithFeatureValue(examplePairs, bestFeature, bestFeatureSplitValue, GREATER_THAN_VALUE);
-		DecisionTreeNode greaterThanValueNode = learnRuleDecisionTree(greaterThanValueExPairs, features, leafThreshold);
-		greaterThanValueNode.setParentFeatureName(bestFeature);
-		greaterThanValueNode.setParentFeatureLinkValue(bestFeatureSplitValue);
-		featureValueNodes.add(greaterThanValueNode);
-		
-		// Child node to represent MISSING branch for current best feature
-		List<ExamplePair> missingValueExPairs = 
-				getExamplePairsWithFeatureValue(examplePairs, bestFeature, bestFeatureSplitValue, MISSING_VALUE);
-		DecisionTreeNode missingValueNode = learnRuleDecisionTree(missingValueExPairs, features, leafThreshold);
-		missingValueNode.setParentFeatureName(bestFeature);
-		missingValueNode.setParentFeatureLinkValue(bestFeatureSplitValue);
-		featureValueNodes.add(missingValueNode);
+		// Iterate through the possible feature values and generate apt tree branches
+		for(DecisionTreeLinkType dTreeLinkType : DecisionTreeLinkType.getDecisonTreeLinkValues()) {
+			String operatorToApply = dTreeLinkType.getOperatorToApply();
+			List<ExamplePair> exPairs = 
+				getExamplePairsWithFeatureValue(examplePairs, bestFeature, bestFeatureSplitValue, operatorToApply);
+			DecisionTreeNode valueNode = learnRuleDecisionTree(exPairs, features, leafThreshold);
+			valueNode.setParentFeatureName(bestFeature);
+			valueNode.setParentFeatureLinkValue(bestFeatureSplitValue);
+			valueNode.setParentLinkType(dTreeLinkType);
+			
+			featureValueNodes.add(valueNode);
+		}
 		
 		root.setChildNodes(featureValueNodes);
 		return root;
@@ -135,10 +132,12 @@ public class DecisionTreeUtils {
 			}
 		}
 		
+		// Couldn't find a single feature with positive information gain.
 		if(Double.compare(maxInfoGain, 0) <= 0) {
 			bestFeature = null;
 		}
 		
+		System.out.println("#Best feature " + bestFeature.getName() + " with info gain " + maxInfoGain);
 		return bestFeature;
 	}
 	
@@ -157,6 +156,8 @@ public class DecisionTreeUtils {
 		
 		double featureInfo = getInfoForNumericValueSplit(examplePairs, feature, bestSplitValue);
 		
+		System.out.println("#Best info gain for feature " + feature.getName() + " with split value " + bestSplitValue + " for gain " + 
+		(totalInfo - featureInfo));
 		return totalInfo - featureInfo;
 	}
 	
@@ -165,9 +166,12 @@ public class DecisionTreeUtils {
 	 */
 	private static double getInfoForNumericValueSplit(List<ExamplePair> examplePairs, Feature feature, double splitValue)
 	{
-		List<ExamplePair> lessThanValueExPairs = getExamplePairsWithFeatureValue(examplePairs, feature, splitValue, LESS_THAN_VALUE);
-		List<ExamplePair> greaterThanValueExPairs = getExamplePairsWithFeatureValue(examplePairs, feature, splitValue, GREATER_THAN_VALUE);
-		List<ExamplePair> missingValueExPairs = getExamplePairsWithFeatureValue(examplePairs, feature, splitValue, MISSING_VALUE);
+		List<ExamplePair> lessThanValueExPairs = 
+			getExamplePairsWithFeatureValue(examplePairs, feature, splitValue, LESS_THAN_VALUE);
+		List<ExamplePair> greaterThanValueExPairs = 
+			getExamplePairsWithFeatureValue(examplePairs, feature, splitValue, GREATER_THAN_VALUE);
+		List<ExamplePair> missingValueExPairs = 
+			getExamplePairsWithFeatureValue(examplePairs, feature, splitValue, MISSING_VALUE);
 		
 		int totalExPairsCnt = examplePairs.size();
 		int lessThanValueExPairsCnt = lessThanValueExPairs.size();
@@ -189,7 +193,7 @@ public class DecisionTreeUtils {
 	 */
 	private static double getBestSplitThreshold(List<ExamplePair> exPairs, Feature feature)
 	{
-		double bestSplitThreshold = -999.0;
+		double bestSplitThreshold = 0.0;
 		double bestInfoGain = -999.0;
 		
 		List<Double> candidateSplitValues = getCandidateSplitValues(exPairs, feature);
@@ -198,7 +202,8 @@ public class DecisionTreeUtils {
 		}
 		
 		for(Double splitValue : candidateSplitValues) {
-			double infoGain = getInfo(exPairs) - getInfoForNumericValueSplit(exPairs, feature, splitValue);
+			double infoGain = 
+					getInfo(exPairs) - getInfoForNumericValueSplit(exPairs, feature, splitValue);
 			if(Double.compare(infoGain, bestInfoGain) > 0) {
 				bestInfoGain = infoGain;
 				bestSplitThreshold = splitValue;
@@ -235,11 +240,13 @@ public class DecisionTreeUtils {
 		
 		// Get the sorted list of feature values
 		List<Double> featureValues = Lists.newArrayList(valueExPairsMap.keySet());
+		System.out.println("Feature values for feature " + feature.getName() + " are " + featureValues.toString());
 		if(featureValues.size() <= 1) {
+			System.out.println("0 or 1 feature values only. No need for split.");
 			return candidateSplitValues;
 		}
 
-		double prevFeatureValue = candidateSplitValues.get(0);
+		double prevFeatureValue = featureValues.get(0);
 		for(Double value : featureValues) {
 			double nextFeatureValue = value;
 			List<ExamplePair> prevFeatureValueExPairs = valueExPairsMap.get(prevFeatureValue);
@@ -251,6 +258,7 @@ public class DecisionTreeUtils {
 			}
 		}
 		
+		System.out.println("Candidate split values for feature " + feature + " are " + candidateSplitValues.toString());
 		return candidateSplitValues;
 	}
 	
@@ -302,10 +310,12 @@ public class DecisionTreeUtils {
 		double firstClassInfo = 0.0;
 		double secondClassInfo = 0.0;
 		if(firstClassExamples > 0) {
-			firstClassInfo = -(firstClassExamples/(float)(totalExamples))*(Math.log(firstClassExamples/(float)(totalExamples))/Math.log(2.0));
+			firstClassInfo = -(firstClassExamples/(double)(totalExamples))*
+					(Math.log(firstClassExamples/(double)(totalExamples))/Math.log(2.0));
 		}
 		if(secondClassExamples > 0) {
-			secondClassInfo = -(secondClassExamples/(float)(totalExamples))*(Math.log(secondClassExamples/(float)(totalExamples))/Math.log(2.0));
+			secondClassInfo = -(secondClassExamples/(double)(totalExamples))*
+					(Math.log(secondClassExamples/(double)(totalExamples))/Math.log(2.0));
 		}
 		
 		return firstClassInfo + secondClassInfo;
@@ -322,11 +332,11 @@ public class DecisionTreeUtils {
 		for(ExamplePair exPair : examplePairs) {
 			double featureScore = exPair.getAttributeMatchScore(bestFeature);
 			// Mismatch case
-			if(operator.equals(LESS_THAN_VALUE) && Double.compare(featureScore, bestFeatureValue) <= 0) {
+			if(operator.equals(LESS_THAN_VALUE) && Double.compare(featureScore, bestFeatureValue) < 0) {
 				filteredExPairs.add(exPair);
 			}
 			// Match case
-			else if(operator.equals(GREATER_THAN_VALUE) && Double.compare(featureScore, bestFeatureValue) > 0) {
+			else if(operator.equals(GREATER_THAN_VALUE) && Double.compare(featureScore, bestFeatureValue) >= 0) {
 				filteredExPairs.add(exPair);
 			}
 			// Missing value case
@@ -421,9 +431,54 @@ public class DecisionTreeUtils {
 	 * Prints the decision tree for visual analysis.
 	 * @param dtree
 	 */
-	public static void printRuleDecisionTree(DecisionTreeNode dtree)
+	public static void printRuleDecisionTree(DecisionTreeNode dtree, String prefix)
 	{
+		if(dtree == null || dtree.getChildNodes() == null) {
+			return;
+		}
 		
+		List<DecisionTreeNode> dTreeChildNodes = dtree.getChildNodes();
+		for(DecisionTreeNode childNode : dTreeChildNodes) {
+			StringBuilder nodeState = new StringBuilder();
+			nodeState.append(prefix).append(" ").append(childNode.getParentFeatureName());
+			nodeState.append(" ").append(childNode.getParentFeatureLinkValue());
+			nodeState.append(" ").append(getClassLabelsCount(childNode.getExamples()));
+			if(childNode.getNodeType() == DecisionTreeNodeType.CLASS_NODE) {
+				nodeState.append(" : ").append(childNode.getLabel());
+			}
+			
+			// print the state of the current node in decision tree
+			System.out.println(nodeState.toString());
+			
+			// recursively print the tree, separated by pipes and tabs for a visual effect
+			printRuleDecisionTree(childNode, prefix + "|\t");
+		}
+		
+	}
+	
+	public static String getClassLabelsCount(List<ExamplePair> exPairs)
+	{
+		Map<DecisionTreeClassLabel, Integer> classLabelsMap = getClassLabelsMap(exPairs);
+		
+		StringBuilder labelsCountStr = new StringBuilder();
+		labelsCountStr.append(" [ ");
+		if(classLabelsMap.containsKey(DecisionTreeClassLabel.MATCH)) {
+			labelsCountStr.append(classLabelsMap.get(DecisionTreeClassLabel.MATCH));
+		}
+		else {
+			labelsCountStr.append(" 0 ");
+		}
+		labelsCountStr.append(" (+) , ");
+
+		if(classLabelsMap.containsKey(DecisionTreeClassLabel.MISMATCH)) {
+			labelsCountStr.append(classLabelsMap.get(DecisionTreeClassLabel.MISMATCH));
+		}
+		else {
+			labelsCountStr.append(" 0 ");
+		}
+
+		labelsCountStr.append(" (-) ] ");
+		return labelsCountStr.toString();
 	}
 	
 	/**
