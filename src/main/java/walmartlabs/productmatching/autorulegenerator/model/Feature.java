@@ -62,11 +62,13 @@ public class Feature {
 		return builder.toString();
 	}
 
-	public int hashcode()
+	@Override
+	public int hashCode()
 	{
 		return Objects.hashCode(this.name, this.dataType);
 	}
 	
+	@Override
 	public boolean equals(Object obj) {
 	    if (obj == null) return false;
 	    if (getClass() != obj.getClass()) return false;

@@ -238,6 +238,12 @@ public class DecisionTreeUtils {
 			valueExPairsMap.put(featureValue, featureValueExPairs);
 		}
 		
+		System.out.println("Feature name : " + feature.toString());
+		for(Map.Entry<Double, List<ExamplePair>> entry : valueExPairsMap.entrySet()) {
+			String classLabelsCount = getClassLabelsCount(entry.getValue());
+			System.out.println("Value : " + entry.getKey() + " ==> " + classLabelsCount);
+		}
+		
 		// Get the sorted list of feature values
 		List<Double> featureValues = Lists.newArrayList(valueExPairsMap.keySet());
 		System.out.println("Feature values for feature " + feature.getName() + " are " + featureValues.toString());

@@ -1,5 +1,6 @@
 package walmartlabs.productmatching.autorulegenerator.utils.match;
 
+import java.text.DecimalFormat;
 import java.util.List;
 
 import com.google.common.base.Strings;
@@ -22,6 +23,7 @@ import walmartlabs.productmatching.autorulegenerator.model.Feature;
  */
 public class MatchUtils {
 
+	private static DecimalFormat DECIMAL_FORMATTER = new DecimalFormat("##.00");
 	private static StandardAnalyzerTokenizer TOKENIZER = new StandardAnalyzerTokenizer();
 	
 	/**
@@ -32,10 +34,14 @@ public class MatchUtils {
 	 * @param val2
 	 * @param feature
 	 */
-	public static double getSimilarityScore(String val1, String val2, Feature feature)
+	public static double getTwoWaySimilarityScore(String val1, String val2, Feature feature)
 	{
-		double score = 0.0;
-		
+		double score =  Math.max(getSimilarityScore(val1, val2, feature), getSimilarityScore(val2, val1, feature));
+		return Double.valueOf(DECIMAL_FORMATTER.format(score));
+	}
+	
+	private static double getSimilarityScore(String val1, String val2, Feature feature)
+	{
 		if(Strings.isNullOrEmpty(val1) || Strings.isNullOrEmpty(val2)) {
 			return 0.0;
 		}
@@ -48,8 +54,7 @@ public class MatchUtils {
 		List<TokenAuditEntity> tokenAuditValues = Lists.newArrayList();
 		
 		StringTokenContainmentScoreCalculator calculator = new StringTokenContainmentScoreCalculator();
-		score = calculator.containmentScore(sourceTokens, targetTokenLists, comparers, tokenAuditValues);
-		return score;
+		return calculator.containmentScore(sourceTokens, targetTokenLists, comparers, tokenAuditValues);		
 	}
 	
 	/**
@@ -63,7 +68,7 @@ public class MatchUtils {
 		for(String idKey : idKeys) {
 			String val1 = ex1.getValueForAttribute(idKey);
 			String val2 = ex2.getValueForAttribute(idKey);
-			totalScore += getSimilarityScore(val1, val2, null);
+			totalScore += getTwoWaySimilarityScore(val1, val2, null);
 		}
 		
 		return (totalScore/(double)(idKeys.size()));

@@ -18,8 +18,8 @@ public class Dataset {
 	public Dataset(String name, List<Feature> features, List<ExamplePair> examplePairs)
 	{
 		this.name = name;
-		this.features = features;
-		this.examplePairs = examplePairs;
+		this.features = Lists.newArrayList(features);
+		this.examplePairs = Lists.newArrayList(examplePairs);
 	}
 
 	@Override

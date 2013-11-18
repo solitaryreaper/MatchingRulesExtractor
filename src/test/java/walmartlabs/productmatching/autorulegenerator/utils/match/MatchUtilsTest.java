@@ -1,5 +1,6 @@
 package walmartlabs.productmatching.autorulegenerator.utils.match;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.collect.Lists;
@@ -18,9 +19,25 @@ public class MatchUtilsTest {
 		str1 = "art's delicatessen";
 		str2 = "art's deli";
 		runTest(str1, str2);
+		
+		str1 = "jo jo";
+		str2 = "jo jo";
+		runTest(str1, str2);
+		
+		str1 = "montrachet (west)";
+		str2 = "montrachet (east)";
+		runTest(str1, str2);
+		
+		str1 = "jo jo";
+		str2 = "jordan";
+		runTest(str1, str2);
+		
+		str1 = "union square cafe";
+		str2 = "super uni square cafe";
+		runTest(str1, str2);
 	}
 
-	@Test
+	@Ignore
 	public void testAddress()
 	{
 		String str1 = "435 s. la cienega blv.";
@@ -32,7 +49,7 @@ public class MatchUtilsTest {
 		runTest(str1, str2);
 	}	
 	
-	@Test
+	@Ignore
 	public void testCity()
 	{
 		String str1 = "los angeles";
@@ -44,7 +61,7 @@ public class MatchUtilsTest {
 		runTest(str1, str2);
 	}
 	
-	@Test
+	@Ignore
 	public void testPhone()
 	{
 		String str1 = "310/246-1501";
@@ -56,7 +73,7 @@ public class MatchUtilsTest {
 		runTest(str1, str2);
 	}	
 	
-	@Test
+	@Ignore
 	public void testType()
 	{
 		String str1 = "american";
@@ -68,7 +85,7 @@ public class MatchUtilsTest {
 		runTest(str1, str2);
 	}	
 	
-	@Test
+	@Ignore
 	public void testClass()
 	{
 		String str1 = "0";
@@ -80,18 +97,9 @@ public class MatchUtilsTest {
 		runTest(str1, str2);
 	}	
 	
-	/*
-	public void testExampleSimilarity()
-	{
-		Example ex1 = ;
-		Example ex2 = ;
-		List<String> idKeys = Lists.newArrayList("name", "addr");
-	}
-	*/
-	
 	private void runTest(String str1, String str2)
 	{
-		double score = matchUtils.getSimilarityScore(str1, str2, null);
+		double score = matchUtils.getTwoWaySimilarityScore(str1, str2, null);
 		System.out.println("Score for str1: " + str1 + ", str2: " + str2 + " is " + score);		
 	}
 }

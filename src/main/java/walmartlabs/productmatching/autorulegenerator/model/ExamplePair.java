@@ -29,7 +29,9 @@ public class ExamplePair {
 		this.classLabel = classLabel;
 		
 		// calculate the score for each attribute and persist in a map
-		attributeMatchScoreMap = calculateAttributeMatchScoreMap(sourceItem, targetItem);
+		attributeMatchScoreMap = Maps.newHashMap();
+		Map<Feature, Double> tempAttributeMatchScoreMap = calculateAttributeMatchScoreMap(sourceItem, targetItem);
+		attributeMatchScoreMap.putAll(tempAttributeMatchScoreMap);
 	}
 	
 	public Example getSourceItem() {
@@ -78,7 +80,7 @@ public class ExamplePair {
 		for(Feature f : features) {
 			String sourceAttrVal = sourceItemAttrValMap.get(f);
 			String targetAttrVal = targetItemAttrValMap.get(f);
-			double simScore = MatchUtils.getSimilarityScore(sourceAttrVal, targetAttrVal, f);
+			double simScore = MatchUtils.getTwoWaySimilarityScore(sourceAttrVal, targetAttrVal, f);
 			attrSimScoreMap.put(f, simScore);
 		}
 		
@@ -111,9 +113,11 @@ public class ExamplePair {
 		Set<Feature> features = sourceItemAttrMap.keySet();
 		//features.addAll(targetItemAttrMap.keySet());
 		for(Feature feature : features) {
+			Double score = getAttributeMatchScore(feature);
 			String attrName = feature.getName();
 			String sourceVal = sourceItem.getValueForAttribute(attrName);
 			String targetVal = targetItem.getValueForAttribute(attrName);
+			builder.append(score).append(" ==> ");
 			builder.append(attrName).append("|#").append(sourceVal).append("|#").append(targetVal).append("|#").append("\n");
 		}
 		builder.append("\n");

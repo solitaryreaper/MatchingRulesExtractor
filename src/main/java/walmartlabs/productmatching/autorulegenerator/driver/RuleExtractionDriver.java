@@ -1,16 +1,11 @@
 package walmartlabs.productmatching.autorulegenerator.driver;
 
 import java.io.File;
-import java.util.List;
 
 import walmartlabs.productmatching.autorulegenerator.model.Dataset;
 import walmartlabs.productmatching.autorulegenerator.model.DecisionTreeNode;
 import walmartlabs.productmatching.autorulegenerator.utils.DecisionTreeUtils;
-import walmartlabs.productmatching.autorulegenerator.utils.input.ArffDatasetReader;
-import walmartlabs.productmatching.autorulegenerator.utils.input.DatasetReader;
 import walmartlabs.productmatching.autorulegenerator.utils.input.ItemPairDatasetReader;
-
-import com.google.common.collect.Lists;
 
 /**
  * Driver class that encapsulates the entire workflow for auto-generation of rules from a dataset.
