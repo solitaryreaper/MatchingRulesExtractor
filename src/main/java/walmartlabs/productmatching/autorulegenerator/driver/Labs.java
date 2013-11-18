@@ -11,10 +11,9 @@ import com.google.common.collect.Maps;
 public class Labs {
 
 	public static void main(String[] args) {
-		DecimalFormat f = new DecimalFormat("##.00");
-		double x = 2.0;
-		double y = Double.valueOf(f.format(x));
-		System.out.println(y);
+		String temp = "a and b and";
+		String x = temp.substring(0, temp.lastIndexOf("and")).trim();
+		System.out.println(x);
 	}
 
 }

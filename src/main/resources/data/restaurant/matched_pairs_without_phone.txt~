@@ -863,6 +863,7 @@ city|#sherman oaks|#sherman oaks|#
 name|#cafe bizou|#cafe bizou|#
 class|#3|#3|#
 
+
 ID|#818-990-0500-18-|#818/990-0500-18-|#
 type|#french bistro|#french|#
 addr|#12969 ventura blvd.|#12969 ventura blvd.|#
@@ -897,5 +898,3 @@ addr|#3000 paradise rd.|#3000 w. paradise rd.|#
 city|#las vegas|#las vegas|#
 name|#le montrachet bistro|#le montrachet|#
 class|#69|#69|#
-
-

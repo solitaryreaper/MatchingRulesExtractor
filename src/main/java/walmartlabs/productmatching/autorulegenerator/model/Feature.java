@@ -56,10 +56,7 @@ public class Feature {
 	
 	@Override
 	public String toString() {
-		StringBuilder builder = new StringBuilder();
-		builder.append("Feature [name=").append(name).append(", dataType=")
-				.append(dataType).append("]");
-		return builder.toString();
+		return this.name;
 	}
 
 	@Override

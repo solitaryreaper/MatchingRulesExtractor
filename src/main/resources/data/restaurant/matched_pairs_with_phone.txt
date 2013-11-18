@@ -981,3 +981,38 @@ class|#18|#18|#
 phone|#818-990-0500|#818/990-0500|#
 
 
+ID|#702-731-7110-70-|#702/731-7547-70-|#
+type|#french (new)|#continental|#
+addr|#3570 las vegas blvd. s.|#3570 las vegas blvd. s|#
+city|#las vegas|#las vegas|#
+name|#palace court|#palace court|#
+class|#70|#70|#
+phone|#702-731-7110|#702/731-7547|#
+
+
+ID|#702-385-6277-71-|#702/385-3232-71-|#
+type|#pacific rim|#seafood|#
+addr|#200 e. fremont st.|#200 e. fremont st.|#
+city|#las vegas|#las vegas|#
+name|#second street grill|#second street grille|#
+class|#71|#71|#
+phone|#702-385-6277|#702/385-3232|#
+
+ID|#702-732-5651-69-|#702/732-5111-69-|#
+type|#french bistro|#continental|#
+addr|#3000 paradise rd.|#3000 w. paradise rd.|#
+city|#las vegas|#las vegas|#
+name|#le montrachet bistro|#le montrachet|#
+class|#69|#69|#
+phone|#702-732-5651|#702/732-5111|#
+
+
+ID|#212-245-7992-64-|#212/315-1726-64-|#
+type|#greek|#mediterranean|#
+addr|#747 ninth ave.|#747 9th ave.  between 50th and 51st sts.|#
+city|#new york city|#new york|#
+name|#uncle nicks|#uncle nicks|#
+class|#64|#64|#
+phone|#212-245-7992|#212/315-1726|#
+
+

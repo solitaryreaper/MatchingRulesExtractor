@@ -1,8 +1,10 @@
 package walmartlabs.productmatching.autorulegenerator.model;
 
 import java.util.List;
+import java.util.Map;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 /**
  * Represents the dataset to be evaluated.
@@ -53,6 +55,25 @@ public class Dataset {
 	
 	public void setExamplePairs(List<ExamplePair> examplePairs) {
 		this.examplePairs = examplePairs;
+	}
+	
+	public Map<DecisionTreeClassLabel, Integer> getDatatsetStats()
+	{
+		Map<DecisionTreeClassLabel, Integer> datasetStats = Maps.newHashMap();
+		int matchedPairs = 0;
+		int mismatchedPairs = 0;
+		for(ExamplePair exPair : getExamplePairs()) {
+			if(exPair.getClassLabel().equals(DecisionTreeClassLabel.MATCH)) {
+				++matchedPairs;
+			}
+			else {
+				++mismatchedPairs;
+			}
+		}
+		
+		datasetStats.put(DecisionTreeClassLabel.MATCH, matchedPairs);
+		datasetStats.put(DecisionTreeClassLabel.MISMATCH, mismatchedPairs);
+		return datasetStats;
 	}
 	
 }

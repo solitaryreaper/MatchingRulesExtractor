@@ -1,8 +1,10 @@
 package walmartlabs.productmatching.autorulegenerator.driver;
 
 import java.io.File;
+import java.util.Map;
 
 import walmartlabs.productmatching.autorulegenerator.model.Dataset;
+import walmartlabs.productmatching.autorulegenerator.model.DecisionTreeClassLabel;
 import walmartlabs.productmatching.autorulegenerator.model.DecisionTreeNode;
 import walmartlabs.productmatching.autorulegenerator.utils.DecisionTreeUtils;
 import walmartlabs.productmatching.autorulegenerator.utils.input.ItemPairDatasetReader;
@@ -32,14 +34,25 @@ public class RuleExtractionDriver {
 		
 		// Step2: Build the decision tree from the training dataset
 		System.out.println("Generating the decision tree ..");
+		
+		// If only 1% of itempairs are left at a node then create a leaf node with majority label
+		// to avoid overfitting.
+		int leafThreshold = (int)(1*trainDataset.getExamplePairs().size()/100);
+		System.out.println("Threshold is : " + leafThreshold);
 		DecisionTreeNode ruleDTree = 
-			DecisionTreeUtils.learnRuleDecisionTree(trainDataset.getExamplePairs(), trainDataset.getFeatures(), 0);
+			DecisionTreeUtils.learnRuleDecisionTree(trainDataset.getExamplePairs(), trainDataset.getFeatures(), leafThreshold);
 		
 		// Step3: Print the decision tree.
 		System.out.println("Printing the decision tree ..");
 		DecisionTreeUtils.printRuleDecisionTree(ruleDTree, "");
 		
 		// Step4 : Extract the rules from the decision tree.
+		System.out.println("Generating matching rules ..");
+		Map<DecisionTreeClassLabel, Integer> datasetStats = trainDataset.getDatatsetStats();
+		int totalMatchedPairs = datasetStats.get(DecisionTreeClassLabel.MATCH);
+		int totalMismatchedPairs = datasetStats.get(DecisionTreeClassLabel.MISMATCH); 
+		DecisionTreeUtils.generateMatchingRules(ruleDTree, "", totalMatchedPairs, totalMismatchedPairs);
+		
 		// TODO
 		/*
 		List<ItemMatchRule> matchingRules = DecisionTreeUtils.extractMatchingRules(ruleDTree);

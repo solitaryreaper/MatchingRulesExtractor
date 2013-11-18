@@ -1,8 +1,10 @@
 package walmartlabs.productmatching.autorulegenerator.utils;
 
+import java.text.DecimalFormat;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.collections.ListUtils;
 import org.apache.commons.collections.MapUtils;
 import org.springframework.util.CollectionUtils;
 
@@ -29,6 +31,8 @@ public class DecisionTreeUtils {
 	private static String GREATER_THAN_VALUE = ">=";
 	private static String MISSING_VALUE = "?";
 	
+	private static DecimalFormat DECIMAL_FORMATTER = new DecimalFormat("##.00");
+	
 	/**
 	 * Learn the decision tree so that it efficiently fits the training dataset.
 	 * 
@@ -50,20 +54,16 @@ public class DecisionTreeUtils {
 		
 		Map<DecisionTreeClassLabel, Integer> classLabelsMap = getClassLabelsMap(examplePairs);
 		DecisionTreeClassLabel majorityClassLabel = getMajorityClassLabel(classLabelsMap);
+		if(majorityClassLabel == null) {
+			majorityClassLabel = defaultClassLabel;
+		}
 		
 		// Returns a leaf node with majority class label if features is empty
 		if(CollectionUtils.isEmpty(features)) {
 			System.out.println("Creating leaf node with MAJORITY label because no features left.");
 			return createLeafNode(examplePairs, features, majorityClassLabel);
 		}
-		
-		// Return if there is a pure classification
-		if(classLabelsMap.size() == 1) {
-			DecisionTreeClassLabel pureClassLabel = Lists.newArrayList(classLabelsMap.keySet()).get(0);
-			System.out.println("Creating leaf node because PURE classification " + pureClassLabel.toString());
-			return createLeafNode(examplePairs, features, pureClassLabel);
-		}
-		
+
 		// Check if number of instances left is less than the leaf threshold
 		if(examplePairs.size() < leafThreshold) {
 			if(majorityClassLabel != null) {
@@ -74,6 +74,13 @@ public class DecisionTreeUtils {
 				System.out.println("Creating leaf node because LESS THAN THRESHOLD with DEFAULT label");				
 				return createLeafNode(examplePairs, features, defaultClassLabel);
 			}
+		}
+		
+		// Return if there is a pure classification
+		if(classLabelsMap.size() == 1) {
+			DecisionTreeClassLabel pureClassLabel = Lists.newArrayList(classLabelsMap.keySet()).get(0);
+			System.out.println("Creating leaf node because PURE classification " + pureClassLabel.toString());
+			return createLeafNode(examplePairs, features, pureClassLabel);
 		}
 		
 		// Choose the best feature
@@ -99,12 +106,13 @@ public class DecisionTreeUtils {
 		double bestFeatureSplitValue = getBestSplitThreshold(examplePairs, bestFeature);
 		System.out.println("Best split value of " + bestFeatureSplitValue + " for feature " + bestFeature.getName());
 		
+		List<Feature> remainingFeatures = getRemainingFeatures(features, bestFeature);
 		// Iterate through the possible feature values and generate apt tree branches
 		for(DecisionTreeLinkType dTreeLinkType : DecisionTreeLinkType.getDecisonTreeLinkValues()) {
 			String operatorToApply = dTreeLinkType.getOperatorToApply();
 			List<ExamplePair> exPairs = 
 				getExamplePairsWithFeatureValue(examplePairs, bestFeature, bestFeatureSplitValue, operatorToApply);
-			DecisionTreeNode valueNode = learnRuleDecisionTree(exPairs, features, leafThreshold);
+			DecisionTreeNode valueNode = learnRuleDecisionTree(exPairs, remainingFeatures, leafThreshold);
 			valueNode.setParentFeatureName(bestFeature);
 			valueNode.setParentFeatureLinkValue(bestFeatureSplitValue);
 			valueNode.setParentLinkType(dTreeLinkType);
@@ -114,6 +122,23 @@ public class DecisionTreeUtils {
 		
 		root.setChildNodes(featureValueNodes);
 		return root;
+	}
+	
+	/**
+	 * Returns the remaining number of features excluding the feature already chosen.
+	 */
+	private static List<Feature> getRemainingFeatures(List<Feature> features, Feature featureToSubtract)
+	{
+		List<Feature> remainingFeatures = Lists.newArrayList();
+		for(Feature f : features) {
+			if(f.equals(featureToSubtract)) {
+				continue;
+			}
+			
+			remainingFeatures.add(f);
+		}
+		
+		return remainingFeatures;
 	}
 	
 	/**
@@ -137,7 +162,10 @@ public class DecisionTreeUtils {
 			bestFeature = null;
 		}
 		
-		System.out.println("#Best feature " + bestFeature.getName() + " with info gain " + maxInfoGain);
+		if(bestFeature != null) {
+			System.out.println("#Best feature " + bestFeature.getName() + " with info gain " + maxInfoGain);			
+		}
+
 		return bestFeature;
 	}
 	
@@ -446,8 +474,9 @@ public class DecisionTreeUtils {
 		List<DecisionTreeNode> dTreeChildNodes = dtree.getChildNodes();
 		for(DecisionTreeNode childNode : dTreeChildNodes) {
 			StringBuilder nodeState = new StringBuilder();
-			nodeState.append(prefix).append(" ").append(childNode.getParentFeatureName());
-			nodeState.append(" ").append(childNode.getParentFeatureLinkValue());
+			nodeState.append(prefix).append(" M(").append(childNode.getParentFeatureName()).append(") ");
+			nodeState.append(" ").append(childNode.getParentLinkType().getOperatorToApply())
+					 .append(" ").append(childNode.getParentFeatureLinkValue());
 			nodeState.append(" ").append(getClassLabelsCount(childNode.getExamples()));
 			if(childNode.getNodeType() == DecisionTreeNodeType.CLASS_NODE) {
 				nodeState.append(" : ").append(childNode.getLabel());
@@ -462,6 +491,70 @@ public class DecisionTreeUtils {
 		
 	}
 	
+	/**
+	 * Generate the set of match/mismatch rules along with some statistics like
+	 * precision, recall and f-score.
+	 */
+	public static void generateMatchingRules(DecisionTreeNode dtree, String rulePrefix, int totalMatches, int totalMismatches)
+	{
+		if(dtree == null || CollectionUtils.isEmpty(dtree.getChildNodes())) {
+			return;
+		}
+		
+		for(DecisionTreeNode childNode : dtree.getChildNodes()) {
+			String ruleSuffix = "M(" + childNode.getParentFeatureName() + ")" + " " + childNode.getParentLinkType().getOperatorToApply() + 
+					" " + childNode.getParentFeatureLinkValue() + " AND ";
+			// If a classificaiton node has been reached, print the rule along with statistics
+			if(childNode.getNodeType().equals(DecisionTreeNodeType.CLASS_NODE)) {
+				Map<DecisionTreeClassLabel, Integer> classLabelsMap = getClassLabelsMap(childNode.getExamples());
+				int matches = 0;
+				if(classLabelsMap.containsKey(DecisionTreeClassLabel.MATCH)) {
+					matches = classLabelsMap.get(DecisionTreeClassLabel.MATCH);					
+				}
+				int mismatches = 0;
+				if(classLabelsMap.containsKey(DecisionTreeClassLabel.MISMATCH)) {
+					mismatches = classLabelsMap.get(DecisionTreeClassLabel.MISMATCH);					
+				}
+
+				// Only interested in the matching/positive rules
+				if(childNode.getLabel().equals(DecisionTreeClassLabel.MATCH)) {
+					double recall = getRuleRecall(matches, mismatches, totalMatches, totalMismatches);
+					double precision = getRulePrecision(matches, mismatches, totalMatches, totalMismatches);
+					double fscore = getRuleFScore(matches, mismatches, totalMatches, totalMismatches);
+					
+					String rule = rulePrefix + ruleSuffix.substring(0, ruleSuffix.lastIndexOf("AND")).trim();
+					System.out.println( childNode.getLabel().toString() + " RULE : " + rule + " : (R=" + recall + ", P=" + precision + ", FS=" + fscore + ")");				
+				}
+			}
+			
+			generateMatchingRules(childNode, rulePrefix + ruleSuffix, totalMatches, totalMismatches);			
+		}
+	}
+	
+	// Calculates the precision of the current matching rule
+	private static double getRulePrecision(int matches, int mismatches, int totalMatches, int totalMismatches)
+	{
+		double precisionPercent = (matches/(double)(matches + mismatches))*100;
+		return Double.valueOf(DECIMAL_FORMATTER.format(precisionPercent));
+	}
+	
+	// Calculates the recall of the current rule
+	private static double getRuleRecall(int matches, int mismatches, int totalMatches, int totalMismatches)
+	{
+		double recallPercent = (matches/(double)(totalMatches))*100;
+		return Double.valueOf(DECIMAL_FORMATTER.format(recallPercent));		
+	}
+	
+	// Calculates the F-score of the current rule
+	private static double getRuleFScore(int matches, int mismatches, int totalMatches, int totalMismatches)
+	{
+		double precision = getRulePrecision(matches, mismatches, totalMatches, totalMismatches);
+		double recall = getRuleRecall(matches, mismatches, totalMatches, totalMismatches);
+				
+		double fScorePercent = (2*precision*recall)/(precision + recall);
+		return Double.valueOf(DECIMAL_FORMATTER.format(fScorePercent));		
+	}
+	
 	public static String getClassLabelsCount(List<ExamplePair> exPairs)
 	{
 		Map<DecisionTreeClassLabel, Integer> classLabelsMap = getClassLabelsMap(exPairs);
@@ -474,7 +567,7 @@ public class DecisionTreeUtils {
 		else {
 			labelsCountStr.append(" 0 ");
 		}
-		labelsCountStr.append(" (+) , ");
+		labelsCountStr.append("(+), ");
 
 		if(classLabelsMap.containsKey(DecisionTreeClassLabel.MISMATCH)) {
 			labelsCountStr.append(classLabelsMap.get(DecisionTreeClassLabel.MISMATCH));
@@ -483,7 +576,7 @@ public class DecisionTreeUtils {
 			labelsCountStr.append(" 0 ");
 		}
 
-		labelsCountStr.append(" (-) ] ");
+		labelsCountStr.append("(-) ] ");
 		return labelsCountStr.toString();
 	}
 	
