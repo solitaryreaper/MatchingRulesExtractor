@@ -1,10 +1,8 @@
 package walmartlabs.productmatching.autorulegenerator.model;
 
-import java.util.List;
 import java.util.Map;
 
 import com.google.common.base.Objects;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 /**
@@ -16,8 +14,6 @@ import com.google.common.collect.Maps;
 public class Example implements Comparable<Example> {
 	private String id;
 	private Map<Feature, String> featureValueMap = Maps.newHashMap();
-
-	private List<String> possibleIdKeys = Lists.newArrayList("name", "title", "id");
 	
 	public Example(Map<Feature, String> featureValueMap) {
 		super();
@@ -59,7 +55,7 @@ public class Example implements Comparable<Example> {
 	{
 		String attrValue = "NA";
 		for(Map.Entry<Feature, String> entry : getFeatureValueMap().entrySet()) {
-			if(entry.getKey().getName().toLowerCase().equals(attrName.toLowerCase())) {
+			if(entry.getKey().getAttrName().toLowerCase().equals(attrName.toLowerCase())) {
 				attrValue = entry.getValue();
 				break;
 			}

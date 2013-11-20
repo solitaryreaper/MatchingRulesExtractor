@@ -1,68 +1,41 @@
 package walmartlabs.productmatching.autorulegenerator.model;
 
 import com.google.common.base.Objects;
+import com.walmart.productgenome.pairComparison.utils.comparers.ComparersFactory;
+import com.walmart.productgenome.pairComparison.utils.comparers.IComparer;
 
 /**
- * Represents a feature being evaluated during decision tree learning.
+ * Represents a feature being evaluated during decision tree learning. In case of matching, a
+ * feature is a function of the attribute name and the similarity function being applied to it.
+ * Thus, the decision tree nodes are not simple attribute values as features. Rather they are
+ * the similarity score of a metric on the attribute name.
  * 
  * @author excelsior
  *
  */
 public class Feature {
-	// List of datatypes for feature values
-	public enum DataType
-	{
-		STRING("string"),
-		DATE("date"),
-		NUMERIC("numeric"),
-		NOMINAL("nominal");
-		
-		private String dataType;
-
-		private DataType(String dataType)
-		{
-			this.dataType = dataType;
-		}
-		
-		public String toString()
-		{
-			return dataType;
-		}
-		
-		public static DataType getDataType(String dataType)
-		{
-			DataType dType = DataType.STRING;
-			for(DataType type : DataType.values())
-			{
-				if(dataType.equals(type.toString())) {
-					dType = type;
-					break;
-				}
-			}
-			
-			return dType;
-		}
-	}
+	// Name of the data attribute corresponding to this feature
+	private String attrName;
 	
-	private String name;
-	private DataType dataType;
-
-	public Feature(String name, DataType dataType)
-	{
-		this.name = name;
-		this.dataType = dataType;
-	}
+	// Similarity metric to apply on the attribute name.
+	private IComparer simMeasure;
 	
+	public Feature(String name, IComparer simMeasure)
+	{
+		this.attrName = name;
+		this.simMeasure = simMeasure;
+	}
 	
 	@Override
-	public String toString() {
-		return this.name;
+	public String toString()
+	{
+		return getFeatureName();
 	}
-
+	
 	@Override
 	public int hashCode()
 	{
-		return Objects.hashCode(this.name, this.dataType);
+		return Objects.hashCode(this.attrName, this.simMeasure);
 	}
 	
 	@Override
@@ -70,23 +43,32 @@ public class Feature {
 	    if (obj == null) return false;
 	    if (getClass() != obj.getClass()) return false;
 	    final Feature other = (Feature) obj;
-	    return 	Objects.equal(this.name, other.name) &&
-	    		Objects.equal(this.dataType, other.dataType);
-	}
-	
-	public String getName() {
-		return name;
+	    return 	Objects.equal(this.attrName, other.attrName) &&
+	    		Objects.equal(this.simMeasure, other.simMeasure);
 	}
 
-	public void setName(String name) {
-		this.name = name;
+	public String getAttrName() {
+		return attrName;
 	}
 
-	public DataType getDataType() {
-		return dataType;
+	public void setAttrName(String attrName) {
+		this.attrName = attrName;
 	}
 
-	public void setDataType(String dataType) {
-		this.dataType = DataType.getDataType(dataType);
+	public IComparer getSimMeasure() {
+		return simMeasure;
+	}
+
+	public void setSimMeasure(IComparer simMeasure) {
+		this.simMeasure = simMeasure;
+	}
+
+	/**
+	 * Feature name includes both the attribute name and the similarity function applied to
+	 * uniquely identify the feature.
+	 */
+	public String getFeatureName()
+	{
+		return attrName + "_" + ComparersFactory.getComparerAbbrvName(simMeasure.getClass().getSimpleName());
 	}
 }

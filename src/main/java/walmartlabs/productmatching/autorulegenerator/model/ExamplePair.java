@@ -5,8 +5,6 @@ import java.util.Set;
 
 import com.google.common.collect.Maps;
 
-import walmartlabs.productmatching.autorulegenerator.utils.match.MatchUtils;
-
 /**
  * Represents a pair of examples in the dataset and their match status.
  * 
@@ -80,7 +78,7 @@ public class ExamplePair {
 		for(Feature f : features) {
 			String sourceAttrVal = sourceItemAttrValMap.get(f);
 			String targetAttrVal = targetItemAttrValMap.get(f);
-			double simScore = MatchUtils.getTwoWaySimilarityScore(sourceAttrVal, targetAttrVal, f);
+			double simScore = f.getSimMeasure().compare(sourceAttrVal, targetAttrVal);
 			attrSimScoreMap.put(f, simScore);
 		}
 		
@@ -114,7 +112,7 @@ public class ExamplePair {
 		//features.addAll(targetItemAttrMap.keySet());
 		for(Feature feature : features) {
 			Double score = getAttributeMatchScore(feature);
-			String attrName = feature.getName();
+			String attrName = feature.getAttrName();
 			String sourceVal = sourceItem.getValueForAttribute(attrName);
 			String targetVal = targetItem.getValueForAttribute(attrName);
 			builder.append(score).append(" ==> ");

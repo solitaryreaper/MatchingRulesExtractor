@@ -12,10 +12,11 @@ import walmartlabs.productmatching.autorulegenerator.model.DecisionTreeClassLabe
 import walmartlabs.productmatching.autorulegenerator.model.Example;
 import walmartlabs.productmatching.autorulegenerator.model.ExamplePair;
 import walmartlabs.productmatching.autorulegenerator.model.Feature;
-import walmartlabs.productmatching.autorulegenerator.model.Feature.DataType;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.walmart.productgenome.pairComparison.utils.comparers.ComparersFactory;
+import com.walmart.productgenome.pairComparison.utils.comparers.IComparer;
 
 /**
  * Reads the dataset containing itempairs to be matched.
@@ -52,7 +53,7 @@ public class ItemPairDatasetReader {
 	private static Dataset parseFile(File file, DecisionTreeClassLabel label)
 	{
 		List<ExamplePair> exPairs = Lists.newArrayList();
-		List<Feature> features = Lists.newArrayList();
+		List<Feature> allFeatures = Lists.newArrayList();
 		String datasetName = null;
 		
 		ExamplePair exPair = null;
@@ -98,8 +99,7 @@ public class ItemPairDatasetReader {
  	 					String attrName = temp[1].trim();
  	 					String attrType = temp[2].trim();
  	 					
-  	 					DataType attrDataType = DataType.getDataType(attrType);
-	 					features.add(new Feature(attrName, attrDataType));
+ 	 					allFeatures.addAll(getFeaturesForAttributeName(attrName));
  	 				}
  	 				else if(currLine.startsWith(DATA_IDENTIFIER)) {
  	 					isDataReadStarted = true;
@@ -125,9 +125,12 @@ public class ItemPairDatasetReader {
  						if(temp.length > 2) {
  							targetAttrValue = temp[2];
  						}
- 						Feature feature = getFeatureByName(attrKey, features);
- 						sourceFeatureValMap.put(feature, sourceAttrValue);
- 						targetFeatureValMap.put(feature, targetAttrValue);
+ 						
+ 						List<Feature> attrFeatures = findFeaturesByAttrName(attrKey, allFeatures);
+ 						for(Feature f : attrFeatures) {
+ 	 						sourceFeatureValMap.put(f, sourceAttrValue);
+ 	 						targetFeatureValMap.put(f, targetAttrValue); 							
+ 						}
  					}
  				}
 			}
@@ -137,19 +140,31 @@ public class ItemPairDatasetReader {
 			e.printStackTrace();
 		} 
 		
-		return new Dataset(datasetName, features, exPairs);
+		return new Dataset(datasetName, allFeatures, exPairs);
 	}
 	
-	private static Feature getFeatureByName(String attrName, List<Feature> features)
+	/**
+	 * Get all the relevant features for an attribute name. 
+	 */
+	private static List<Feature> getFeaturesForAttributeName(String attrName)
 	{
-		Feature feature = null;
-		for(Feature f : features) {
-			if(f.getName().equals(attrName)) {
-				feature = f;
-				break;
+		List<Feature> features = Lists.newArrayList();
+		for(IComparer comparer : ComparersFactory.MATCH_COMPARERS) {
+			features.add(new Feature(attrName, comparer));
+		}
+		
+		return features;
+	}
+	
+	private static List<Feature> findFeaturesByAttrName(String attrName, List<Feature> allFeatures)
+	{
+		List<Feature> features = Lists.newArrayList();
+		for(Feature f : allFeatures) {
+			if(f.getAttrName().equals(attrName)) {
+				features.add(f);
 			}
 		}
 		
-		return feature;
+		return features;
 	}
 }

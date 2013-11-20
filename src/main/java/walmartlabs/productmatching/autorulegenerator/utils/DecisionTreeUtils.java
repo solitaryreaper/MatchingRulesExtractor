@@ -4,9 +4,8 @@ import java.text.DecimalFormat;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.collections.ListUtils;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
-import org.springframework.util.CollectionUtils;
 
 import walmartlabs.productmatching.autorulegenerator.model.DecisionTreeClassLabel;
 import walmartlabs.productmatching.autorulegenerator.model.DecisionTreeLinkType;
@@ -90,7 +89,7 @@ public class DecisionTreeUtils {
 			return createLeafNode(examplePairs, features, majorityClassLabel);
 		}
 		
-		System.out.println("Best feature chosen " + bestFeature.getName());
+		System.out.println("Best feature chosen " + bestFeature.getFeatureName());
 		DecisionTreeNode root = createFeatureNode(examplePairs, features, bestFeature);
 		
 		// All the various branches emanating downwards from this decision node
@@ -104,7 +103,7 @@ public class DecisionTreeUtils {
 		List<DecisionTreeNode> featureValueNodes = Lists.newArrayList();
 		
 		double bestFeatureSplitValue = getBestSplitThreshold(examplePairs, bestFeature);
-		System.out.println("Best split value of " + bestFeatureSplitValue + " for feature " + bestFeature.getName());
+		System.out.println("Best split value of " + bestFeatureSplitValue + " for feature " + bestFeature.getAttrName());
 		
 		List<Feature> remainingFeatures = getRemainingFeatures(features, bestFeature);
 		// Iterate through the possible feature values and generate apt tree branches
@@ -131,7 +130,7 @@ public class DecisionTreeUtils {
 	{
 		List<Feature> remainingFeatures = Lists.newArrayList();
 		for(Feature f : features) {
-			if(f.equals(featureToSubtract)) {
+			if(f.getAttrName().equals(featureToSubtract.getAttrName())) {
 				continue;
 			}
 			
@@ -163,7 +162,7 @@ public class DecisionTreeUtils {
 		}
 		
 		if(bestFeature != null) {
-			System.out.println("#Best feature " + bestFeature.getName() + " with info gain " + maxInfoGain);			
+			System.out.println("#Best feature " + bestFeature.getFeatureName() + " with info gain " + maxInfoGain);			
 		}
 
 		return bestFeature;
@@ -184,7 +183,7 @@ public class DecisionTreeUtils {
 		
 		double featureInfo = getInfoForNumericValueSplit(examplePairs, feature, bestSplitValue);
 		
-		System.out.println("#Best info gain for feature " + feature.getName() + " with split value " + bestSplitValue + " for gain " + 
+		System.out.println("#Best info gain for feature " + feature.getFeatureName() + " with split value " + bestSplitValue + " for gain " + 
 		(totalInfo - featureInfo));
 		return totalInfo - featureInfo;
 	}
@@ -238,7 +237,7 @@ public class DecisionTreeUtils {
 			}
 		}
 		
-		return bestSplitThreshold;
+		return Double.valueOf(DECIMAL_FORMATTER.format(bestSplitThreshold));
 	}
 	
 	/**
@@ -274,7 +273,7 @@ public class DecisionTreeUtils {
 		
 		// Get the sorted list of feature values
 		List<Double> featureValues = Lists.newArrayList(valueExPairsMap.keySet());
-		System.out.println("Feature values for feature " + feature.getName() + " are " + featureValues.toString());
+		System.out.println("Feature values for feature " + feature.getFeatureName() + " are " + featureValues.toString());
 		if(featureValues.size() <= 1) {
 			System.out.println("0 or 1 feature values only. No need for split.");
 			return candidateSplitValues;
@@ -474,7 +473,7 @@ public class DecisionTreeUtils {
 		List<DecisionTreeNode> dTreeChildNodes = dtree.getChildNodes();
 		for(DecisionTreeNode childNode : dTreeChildNodes) {
 			StringBuilder nodeState = new StringBuilder();
-			nodeState.append(prefix).append(" M(").append(childNode.getParentFeatureName()).append(") ");
+			nodeState.append(prefix).append(" ").append(childNode.getParentFeatureName()).append(" ");
 			nodeState.append(" ").append(childNode.getParentLinkType().getOperatorToApply())
 					 .append(" ").append(childNode.getParentFeatureLinkValue());
 			nodeState.append(" ").append(getClassLabelsCount(childNode.getExamples()));
